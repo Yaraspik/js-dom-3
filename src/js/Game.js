@@ -1,12 +1,13 @@
+import createPosition from './position';
+
 export default class Game {
   constructor() {
-    this.cells = null;
+    this.cells = [];
     this.boardSize = 4;
     this.board = null;
     this.position = null;
 
-    this.createGoblin = this.createGoblin.bind(this);
-    this.createPosition = this.createPosition.bind(this);
+    this.drawGoblin = this.drawGoblin.bind(this);
   }
 
   bindToDOM(container) {
@@ -18,71 +19,47 @@ export default class Game {
   }
 
   init() {
-    this.createField();
-    this.createGoblin();
+    this.drawBoard();
+    this.drawGoblin();
   }
 
-  createField() {
+  drawBoard() {
     const board = document.createElement('div');
     board.classList.add('game-board');
+
+    for (let i = 0; i < this.boardSize ** 2; i += 1) {
+      const cellEl = document.createElement('div');
+      cellEl.classList.add('game-board-cell');
+      cellEl.addEventListener('click', (event) => this.onCellClick(event));
+      this.cells.push(cellEl);
+      board.append(cellEl);
+    }
     this.container.append(board);
     this.board = board;
-
-    for (let i = 0; i < this.boardSize; i += 1) {
-      const row = document.createElement('div');
-      row.classList.add('board-row');
-      for (let j = 0; j < this.boardSize; j += 1) {
-        const field = document.createElement('div');
-        field.classList.add('board-cell');
-        row.append(field);
-      }
-      board.append(row);
-    }
-    this.container.append(board);
   }
 
-  createGoblin() {
+  drawGoblin() {
+    if (this.goblin) {
+      this.goblin.remove();
+    }
+
     const goblin = document.createElement('img');
     goblin.classList.add('game-goblin');
-    let position = this.createPosition();
+
+    const goblinPosition = createPosition(this.goblinPosition, this.boardSize);
+    this.goblinPosition = goblinPosition;
     this.goblin = goblin;
-    this.board.children[position.row].children[position.column].append(goblin);
+    this.cells[goblinPosition].append(goblin);
 
-    setInterval(() => {
-      this.removeGoblin();
-      position = this.createPosition();
-      this.goblin = goblin;
-      this.position = position;
-      this.board.children[position.row].children[position.column].append(goblin);
+    this.timer = setTimeout(() => {
+      this.fail += 1;
+      if (this.fail >= 5) {
+        this.showGameOver();
+        this.fail = 0;
+        clearTimeout(this.timer);
+      } else {
+        this.drawGoblin();
+      }
     }, 1000);
-  }
-
-  * generatePosition() {
-    while (true) {
-      const row = Math.floor(Math.random() * this.boardSize);
-      const column = Math.floor(Math.random() * this.boardSize);
-      const id = `${row}${column}`;
-
-      yield { row, column, id };
-    }
-  }
-
-  createPosition() {
-    const iterator = this.generatePosition();
-    let newPosition = iterator.next().value;
-
-    if (!this.position) {
-      return newPosition;
-    }
-
-    while (newPosition.id === this.position.id) {
-      newPosition = iterator.next().value;
-    }
-
-    return newPosition;
-  }
-
-  removeGoblin() {
-    this.goblin.remove();
   }
 }
